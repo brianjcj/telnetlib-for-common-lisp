@@ -1,20 +1,37 @@
-;;; Brian Jiang (brianjcj AT gmail DOT com)
-;;; 2007-11
+;; Copyright (C) 2007  Brian Jiang
 
-;;; Based on RFC 854: TELNET Protocol Specification, by J. Postel and
-;;; J. Reynolds
+;; Author: Brian Jiang <brianjcj@gmail.com>
+;; Version: 1.0
 
-;;; In our ordinary work, we often write some automatically scripts
-;;; which login in the server to run some commands and performce some
-;;; actions based on the result of the commands. In this case, a telnet
-;;; client library will be very helpful. Such a library is very handy
-;;; in Perl, Python and Ruby. But I googled it a lot and failed to find
-;;; one in Common Lisp. So I decided to port the Telnetlib from Python
-;;; to Common Lisp. Why port from Python? Because I am more familiar
-;;; with Python and have use its TelnetLib before :-)
+;; This library is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU Lesser General Public
+;; License as published by the Free Software Foundation; either
+;; version 2.1 of the License, or (at your option) any later version.
 
-;;; The functionality of this library is almost the same as Python's
-;;; one.  But the interface is a little different.
+;; This library is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;; Lesser General Public License for more details.
+
+;; You can receive a copy of the GNU Lesser General Public License from
+;; http://www.gnu.org/
+
+;;; Commentary:
+;;
+;; Based on RFC 854: TELNET Protocol Specification, by J. Postel and
+;; J. Reynolds
+
+;; In our ordinary work, we often write some automatically scripts
+;; which login in the server to run some commands and performce some
+;; actions based on the result of the commands. In this case, a telnet
+;; client library will be very helpful. Such a library is very handy
+;; in Perl, Python and Ruby. But I googled it a lot and failed to find
+;; one in Common Lisp. So I decided to port the Telnetlib from Python
+;; to Common Lisp. Why port from Python? Because I am more familiar
+;; with Python and have use its TelnetLib before :-)
+
+;; The functionality of this library is almost the same as Python's
+;; one.  But the interface is a little different.
 
 
 (in-package :telnetlib)
