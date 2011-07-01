@@ -1,0 +1,183 @@
+;; -*- MODE: LISP -*-
+;;
+;; Brian Jiang (brianjcj AT gmail.com)
+;; 2007-11
+;;
+;; TelnetLib
+;; =========
+;; In our ordinary work, we often write some automatically scripts
+;; which login in the server to run some commands and performce some
+;; actions based on the result of the commands. In this case, a telnet
+;; client library will be very helpful. Such a library is very handy
+;; in Perl, Python and Ruby. But I googled it a lot and failed to find
+;; one in Common Lisp. So I decided to port the Telnetlib from Python
+;; to Common Lisp. Why port from Python? Because I am more familiar
+;; with Python and have use its TelnetLib before :-) 
+;;
+;; The functionality of this library is almost the same as Python's
+;; one.  But the interface is a little different.
+
+
+;; Supported Lisp implementations
+;; ==============================
+;; - SBCL
+;; - LispWorks
+;; - Allegro CL
+;; - CLISP
+;;
+;; TelnetLib also supports other Lisp implementations (require USOCKET
+;; and FLEXI-STREAMS) . But I have never done any testing for them.
+
+;; Testing:
+;; --------
+;; TelnetLib has been tested in following environment:
+;;   - sbcl-1.0.11-x86-linux
+;;   - LispWorks in Windows XP
+;;   - Allegro CL in Windows XP
+;;   - CLISP 2.43 in Linux
+;;   - CLISP 2.41 in Windows XP
+;;
+;; But it failed in sbcl-1.0.9 in Windows XP. Error occurs
+;; when writing the socket stream.
+
+
+;; Library Dependency
+;; ==================
+;; For SBCL, LispWorks, Allegro CL and CLISP, it only depends on
+;; CL-PPCRE.
+;; For other Lisp implementations, USOCKET and FLEXI-STREAMS (to
+;; set the external-format) are also required.
+
+;; Known Problem
+;; =============
+;; Don't work well when telent localhost. It seems it is due to the process/thread
+;; schedule mechanism. Will try to fix it in the future.
+
+;; How to use it
+;; =============
+
+;; Export functions/macros:
+;; ------------------------
+(defun open-telnet-session (host &optional port)...)
+(defun close-telnet-session (tn)....)
+(defmacro with-telnet-session ((tn host &optional port) &body body)....)
+(defun set-telnet-session-option (tn
+                                  &key (remove-return-char nil r-r-c-p)
+                                  (debug-on nil debug-on-p)
+                                  (char-callback nil char-callback-p)
+                                  (option-callback nil option-callback-p)
+                                  (sb-option-callback nil sb-option-callback-p))...)
+(defun peek-available-data (tn &optional block-read)....)
+(defun read-available-data (tn &optional block-read)....
+(defun read-until (tn str &key (timeout 600) case-insensitive-mode)....)
+(defun read-until-2 (tn strings &key (timeout 600) case-insensitive-mode)....)
+(defun read-until-2-ind (tn strings &key (timeout 600) case-insensitive-mode)....)
+(defun expect (tn regexp &optional (timeout 600))....)
+(defun format-tn (tn control-string &rest format-arguments)....)
+(defun write-ln (tn str)....)
+(defun write-ln-crlr (tn str)....)
+
+
+;; Example:
+;; --------
+(defun example-1 ()
+  (with-telnet-session (tn "202.38.33.94")
+
+    (set-telnet-session-option tn :remove-return-char t)
+    
+    (read-until tn "ogin:")
+    (write-ln tn "brianjcj")
+
+    (read-until tn "assword:")
+    (write-ln tn "abcdefg12")
+    (read-until tn ">")
+
+    (format-tn tn "~A~%" "pwd") ;; stupid demo :-)
+    (read-until tn ">")
+
+    (write-ln tn "cmd1")
+    (read-until-2 tn (list "Done." "Error" "Pending.")
+                  :case-insensitive-mode t)
+    (read-until tn ">")
+
+    
+    (write-ln tn "cmd2")
+    (expect tn
+            (cl-ppcre:create-scanner
+             "OK\|NO"
+             :case-insensitive-mode t))
+    (read-until tn ">")
+
+    
+    (write-ln tn "cmd3")
+    (expect tn "Done\|Try later.")
+    (read-until tn ">")
+
+    (write-ln tn-vmap "unload testci")
+    (case (read-until-2-ind tn (list "Please confirm (" "has not been loaded yet"))
+      ((0)
+       (read-until tn *prompt*)
+       (sleep *rest-time*)
+       (write-ln tn "Y")
+       (read-until tn *prompt*))
+      ((1)
+       (read-until tn-vmap *prompt*)))
+    
+    (write-ln tn "exit")
+    
+    (loop until (eof tn) do
+         (read-available-data tn t))
+
+    ))
+
+(defun example-2 ()
+
+  (with-telnet-session (tn "202.38.33.94")
+
+    (set-telnet-session-option tn :char-callback nil)
+
+    
+    (princ (read-until tn "ogin:"))
+    (write-ln tn "brianjcj")
+
+    (princ (read-until tn "PassWord:"
+                       :case-insensitive-mode t))
+    (write-ln tn "zaq12WSX")
+    (princ (read-until tn ">"))
+
+    
+    (write-ln tn "ls")
+    (princ (read-until tn ">"))
+
+    (write-ln tn "cmd1")
+    (princ (expect tn "Done\|Error"))
+    (princ (read-until tn ">"))
+
+    (write-ln tn "cmd2")
+    (princ (read-until-2
+            tn
+            (list "OK." "Try again" "Later.")
+            :timeout 10))
+    (princ (read-until tn ">"))
+
+
+    (write-ln tn "cmd3")
+    (princ (read-until-2
+            tn (list "Right" "Wrong")
+            :timeout 10 :case-insensitive-mode t))
+    (princ (read-until tn ">"))
+
+    (write-ln tn "cmd4")
+    (princ (expect
+            tn
+            (cl-ppcre:create-scanner
+             "Right\|Wrong"
+             :case-insensitive-mode t)))
+    (princ (read-until tn ">"))
+    
+    (write-ln tn "exit")
+    
+    (loop until (eof tn) do
+         (princ (read-available-data tn t)))
+
+    ))
