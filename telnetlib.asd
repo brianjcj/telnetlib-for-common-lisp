@@ -33,5 +33,6 @@
                (:file "telnetconst")
                (:file "telnetlib"))
   :depends-on (:cl-ppcre
+               #+sbcl :sb-bsd-sockets
                #-(or :lispworks :allegro :sbcl :clisp) :usocket
                #-(or :lispworks :allegro :sbcl :clisp) :flexi-streams))
